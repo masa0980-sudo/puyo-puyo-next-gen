@@ -6,13 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 モダンで先進的なUI/UXのぷよぷよアプリ（Puyo Puyo game）をNext.js で構築する。
 
+## Links
+
+- **GitHub**: https://github.com/masa0980-sudo/puyo-puyo-next-gen
+- **Production**: https://claudecode-test-mauve.vercel.app
+
 ## Commands
 
 ```bash
-npm run dev      # 開発サーバー起動 (http://localhost:3000)
+# 開発サーバー起動（npm run dev は .bin 未作成時に失敗するため node で直接実行）
+node node_modules/next/dist/bin/next dev --webpack
 npm run build    # 本番ビルド
 npm run lint     # ESLint 実行
 ```
+
+> **注意**: 初回 `npm install` 後に `.bin` が作成されない場合は、ターミナルで `npm install` を再実行して `.bin/next.cmd` が生成されることを確認すること。
 
 ## Stack
 
@@ -51,15 +59,49 @@ v4 では `tailwind.config.js` は使わない。カスタムテーマは `globa
 }
 ```
 
-## ぷよぷよ実装ガイド
+## ぷよぷよ実装ガイド（実装済み）
 
-ゲームロジックはすべてクライアントサイドで動作させる。推奨構成：
+ゲームロジックはすべてクライアントサイドで動作する。実際の構成：
 
-- `src/app/page.tsx` — ゲームのエントリポイント（`"use client"`）
-- `src/lib/puyoGame.ts` — ゲームロジック（ボード管理・落下・連鎖計算）
-- `src/components/` — UI コンポーネント（Board, Puyo, NextPuyo など）
+```
+src/
+  app/
+    page.tsx        # エントリポイント（GameScreen をレンダリング）
+    layout.tsx      # Geist フォント・メタデータ
+    globals.css     # Tailwind v4 + puyo-erase / chain-popup アニメーション
+  lib/
+    types.ts        # 全型定義（PuyoColor, Piece, GameState, GameAction 等）
+    constants.ts    # ゲーム定数（ボードサイズ・速度・スコアテーブル）
+    puyoGame.ts     # 純粋関数ゲームロジック（BFS 連鎖検出・重力・回転）
+    reducer.ts      # useReducer 状態機械（フェーズ管理・スコア計算）
+    storage.ts      # localStorage ハイスコア永続化
+  components/
+    GameScreen.tsx  # メインコンテナ（ゲームループ・キーボード入力）
+    GameBoard.tsx   # 6×12 ボード描画（ゴーストぷよ・消去アニメ）
+    PuyoCell.tsx    # 個別セル（グラデーション・光沢・ゴースト表示）
+    ScorePanel.tsx  # スコア/レベル/連鎖 HUD
+    NextPiece.tsx   # NEXT / 2ND ぷよプレビュー
+    ChainPopup.tsx  # 連鎖数ポップアップアニメーション
+    TitleScreen.tsx # タイトル画面
+    PauseOverlay.tsx   # ポーズオーバーレイ
+    GameOverScreen.tsx # ゲームオーバー画面
+    TouchControls.tsx  # モバイルタッチボタン
+```
 
-ゲームループには `useEffect` + `setInterval` を使用し、キーボード操作は `window.addEventListener("keydown", ...)` で実装する。
+ゲームループは `useEffect` + `setInterval`（falling フェーズ: `dropInterval` ms、その他: 50 ms）。
+キーボード操作は `window.addEventListener("keydown", ...)` で実装。
+
+### ゲームフェーズ
+
+```
+title → falling → locking → checking → erasing（4 tick）→ dropping → checking → …
+                                      ↘ gameover
+```
+
+### 実装済みの挙動メモ
+
+- 横並びペアで片方のみ接地した場合、固定後に `applyGravity` を即時適用して浮いた方を落下させる（`reducer.ts` の `tickLocking` / `HARD_DROP`）
+- タッチコントロールの表示切り替えは `globals.css` の `pointer:coarse:flex` / `pointer:fine:hidden` で制御
 
 ---
 
