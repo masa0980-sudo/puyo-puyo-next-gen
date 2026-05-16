@@ -75,6 +75,7 @@ src/
     puyoGame.ts     # 純粋関数ゲームロジック（BFS 連鎖検出・重力・回転）
     reducer.ts      # useReducer 状態機械（フェーズ管理・スコア計算）
     storage.ts      # localStorage ハイスコア永続化
+    sound.ts        # Web Audio API サウンドエフェクト（外部ファイル不要）
   components/
     GameScreen.tsx  # メインコンテナ（ゲームループ・キーボード入力）
     GameBoard.tsx   # 6×12 ボード描画（ゴーストぷよ・消去アニメ）
@@ -102,6 +103,18 @@ title → falling → locking → checking → erasing（4 tick）→ dropping �
 
 - 横並びペアで片方のみ接地した場合、固定後に `applyGravity` を即時適用して浮いた方を落下させる（`reducer.ts` の `tickLocking` / `HARD_DROP`）
 - タッチコントロールの表示切り替えは `globals.css` の `pointer:coarse:flex` / `pointer:fine:hidden` で制御
+- サウンドは Web Audio API で合成（`sound.ts`）。外部ファイル不要。初回キー操作で AudioContext を起動
+
+### サウンド一覧
+
+| タイミング | 関数 | 音の特徴 |
+|---|---|---|
+| 左右移動 | `playMove()` | 短いクリック（square波、220Hz） |
+| 回転 | `playRotate()` | 2音チャイム（440→550Hz） |
+| 通常着地 | `playLand()` | 低音ドスッ（sine波、140→70Hz） |
+| ハードドロップ | `playHardDrop()` | 強い衝撃音（sawtooth波） |
+| ぷよ消去 | `playErase(chain)` | ポップ連打（連鎖数に応じて音数・音程が上昇） |
+| ゲームオーバー | `playGameOver()` | 下降4音メロディ |
 
 ---
 
