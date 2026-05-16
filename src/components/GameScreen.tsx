@@ -1,8 +1,9 @@
 'use client';
 
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useRef } from 'react';
 import { gameReducer, createTitleState } from '@/lib/reducer';
 import { calcGhostPosition } from '@/lib/puyoGame';
+import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver } from '@/lib/sound';
 import { GameBoard } from './GameBoard';
 import { NextPiece } from './NextPiece';
 import { ScorePanel } from './ScorePanel';
@@ -22,6 +23,21 @@ export function GameScreen() {
       ? calcGhostPosition(state.board, state.currentPiece)
       : null;
 
+  // Sound effects: detect phase transitions
+  const prevPhaseRef = useRef(state.phase);
+  const prevChainRef = useRef(state.chainCount);
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    const prevChain = prevChainRef.current;
+    prevChainRef.current = state.chainCount;
+
+    if (prev === 'falling' && state.phase === 'locking') playLand();
+    if (state.phase === 'erasing' && prev === 'checking') playErase(state.chainCount);
+    if (state.phase === 'gameover' && prev !== 'gameover') playGameOver();
+    void prevChain;
+  }, [state.phase, state.chainCount]);
+
   // Game tick loop
   useEffect(() => {
     if (INACTIVE_PHASES.has(state.phase)) return;
@@ -35,20 +51,20 @@ export function GameScreen() {
     const handler = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowLeft':
-          e.preventDefault(); dispatch({ type: 'MOVE_LEFT' }); break;
+          e.preventDefault(); playMove(); dispatch({ type: 'MOVE_LEFT' }); break;
         case 'ArrowRight':
-          e.preventDefault(); dispatch({ type: 'MOVE_RIGHT' }); break;
+          e.preventDefault(); playMove(); dispatch({ type: 'MOVE_RIGHT' }); break;
         case 'ArrowDown':
           e.preventDefault(); dispatch({ type: 'SOFT_DROP' }); break;
         case 'ArrowUp':
         case ' ':
-          e.preventDefault(); dispatch({ type: 'HARD_DROP' }); break;
+          e.preventDefault(); playHardDrop(); dispatch({ type: 'HARD_DROP' }); break;
         case 'z':
         case 'Z':
-          dispatch({ type: 'ROTATE_LEFT' }); break;
+          playRotate(); dispatch({ type: 'ROTATE_LEFT' }); break;
         case 'x':
         case 'X':
-          dispatch({ type: 'ROTATE_RIGHT' }); break;
+          playRotate(); dispatch({ type: 'ROTATE_RIGHT' }); break;
         case 'p':
         case 'P':
           dispatch({ type: 'TOGGLE_PAUSE' }); break;
@@ -141,12 +157,12 @@ export function GameScreen() {
         </div>
 
         <TouchControls
-          onMoveLeft={() => dispatch({ type: 'MOVE_LEFT' })}
-          onMoveRight={() => dispatch({ type: 'MOVE_RIGHT' })}
+          onMoveLeft={() => { playMove(); dispatch({ type: 'MOVE_LEFT' }); }}
+          onMoveRight={() => { playMove(); dispatch({ type: 'MOVE_RIGHT' }); }}
           onSoftDrop={() => dispatch({ type: 'SOFT_DROP' })}
-          onHardDrop={() => dispatch({ type: 'HARD_DROP' })}
-          onRotateLeft={() => dispatch({ type: 'ROTATE_LEFT' })}
-          onRotateRight={() => dispatch({ type: 'ROTATE_RIGHT' })}
+          onHardDrop={() => { playHardDrop(); dispatch({ type: 'HARD_DROP' }); }}
+          onRotateLeft={() => { playRotate(); dispatch({ type: 'ROTATE_LEFT' }); }}
+          onRotateRight={() => { playRotate(); dispatch({ type: 'ROTATE_RIGHT' }); }}
         />
       </div>
     </div>
