@@ -55,10 +55,13 @@ export function TitleScreen({ highScore, onStart }: Props) {
         PLAY NOW
       </button>
 
-      <div className="relative flex flex-col items-center gap-1 text-white/20 text-xs font-mono">
-        <p>← → : Move　　Z / X : Rotate</p>
-        <p>↓ : Soft Drop　　Space : Hard Drop</p>
-        <p>P : Pause</p>
+      <div
+        className="relative flex flex-col items-center gap-1.5 px-6 py-3 rounded-xl text-xs font-mono text-white/80"
+        style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.14)' }}
+      >
+        <p><span className="font-bold text-white">← →</span> Move　　<span className="font-bold text-white">Z / X</span> Rotate</p>
+        <p><span className="font-bold text-white">↓</span> Soft Drop　　<span className="font-bold text-white">Space</span> Hard Drop</p>
+        <p><span className="font-bold text-white">P</span> Pause</p>
       </div>
     </div>
   );
