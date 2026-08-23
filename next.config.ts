@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
+// GitHub Pages では https://masa0980-sudo.github.io/puyo-puyo-next-gen/ のように
+// リポジトリ名がサブパスになるため、GitHub Actions のビルド時だけ basePath を付ける。
+// ローカル開発時は空のままなので http://localhost:3000/ で普段通り確認できる。
+const isGithubPages = process.env.GITHUB_PAGES === "true";
+const repoName = "puyo-puyo-next-gen";
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "export",
+  basePath: isGithubPages ? `/${repoName}` : "",
+  assetPrefix: isGithubPages ? `/${repoName}/` : "",
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
