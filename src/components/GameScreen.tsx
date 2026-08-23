@@ -3,7 +3,7 @@
 import { useReducer, useEffect, useRef } from 'react';
 import { gameReducer, createTitleState } from '@/lib/reducer';
 import { calcGhostPosition } from '@/lib/puyoGame';
-import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver } from '@/lib/sound';
+import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver, startBgm, stopBgm } from '@/lib/sound';
 import { GameBoard } from './GameBoard';
 import { NextPiece } from './NextPiece';
 import { ScorePanel } from './ScorePanel';
@@ -37,6 +37,17 @@ export function GameScreen() {
     if (state.phase === 'gameover' && prev !== 'gameover') playGameOver();
     void prevChain;
   }, [state.phase, state.chainCount]);
+
+  // BGM: タイトル/ポーズ/ゲームオーバー以外のプレイ中だけ流す。
+  // state.phase 自体(falling/locking/checking/...)は頻繁に変わるので、
+  // active/非active の切り替わりだけを見て start/stop する
+  // (毎フェーズ遷移で再スタートすると曲が刻まれてしまうため)
+  const bgmActive = !INACTIVE_PHASES.has(state.phase);
+  useEffect(() => {
+    if (!bgmActive) return;
+    startBgm();
+    return () => stopBgm();
+  }, [bgmActive]);
 
   // Game tick loop
   useEffect(() => {
