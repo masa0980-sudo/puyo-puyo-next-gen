@@ -3,32 +3,20 @@ interface Props {
   onStart: () => void;
 }
 
-const BLOBS: { color: string; size: number; top: string; left: string; delay: string }[] = [
-  { color: '#ef4444', size: 260, top: '4%',  left: '8%',  delay: '0s' },
-  { color: '#a855f7', size: 300, top: '55%', left: '-4%', delay: '-3s' },
-  { color: '#3b82f6', size: 240, top: '65%', left: '68%', delay: '-7s' },
-  { color: '#22c55e', size: 220, top: '2%',  left: '70%', delay: '-10s' },
-  { color: '#f59e0b', size: 200, top: '30%', left: '38%', delay: '-5s' },
-];
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export function TitleScreen({ highScore, onStart }: Props) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gray-950 flex flex-col items-center justify-center gap-8 p-8">
-      {/* 浮遊するぷよ色のブラー背景 */}
+      {/* キーアート背景。読み込めない環境でも下地の黒背景だけで成立するようにしてある */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        {BLOBS.map((b, i) => (
-          <div
-            key={i}
-            className="title-blob"
-            style={{
-              width: b.size, height: b.size, top: b.top, left: b.left,
-              background: b.color, opacity: 0.35, animationDelay: b.delay,
-            }}
-          />
-        ))}
+        <div
+          className="absolute inset-0 bg-cover"
+          style={{ backgroundImage: `url(${BASE_PATH}/keyart.jpg)`, backgroundPosition: 'center 85%' }}
+        />
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(circle at 50% 45%, rgba(5,5,16,0.15), rgba(5,5,16,0.92) 72%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(5,5,16,0.55) 0%, rgba(5,5,16,0.45) 40%, rgba(5,5,16,0.85) 78%, rgba(5,5,16,0.97) 100%)' }}
         />
       </div>
 

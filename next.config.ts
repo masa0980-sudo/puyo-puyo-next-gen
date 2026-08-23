@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   basePath: isGithubPages ? `/${repoName}` : "",
   assetPrefix: isGithubPages ? `/${repoName}/` : "",
   images: { unoptimized: true },
+  // クライアント側で public/ の画像パスに手動でbasePathを付けるために公開する
+  env: { NEXT_PUBLIC_BASE_PATH: isGithubPages ? `/${repoName}` : "" },
 };
 
 export default nextConfig;
