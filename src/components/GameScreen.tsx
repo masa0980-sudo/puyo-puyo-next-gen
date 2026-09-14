@@ -4,6 +4,7 @@ import { useReducer, useEffect, useRef } from 'react';
 import { gameReducer, createTitleState } from '@/lib/reducer';
 import { calcGhostPosition } from '@/lib/puyoGame';
 import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver, startBgm, stopBgm } from '@/lib/sound';
+import { incrementPlayCount } from '@/lib/playCounts';
 import { GameBoard } from './GameBoard';
 import { NextPiece } from './NextPiece';
 import { ScorePanel } from './ScorePanel';
@@ -22,6 +23,14 @@ export function GameScreen() {
     state.currentPiece && state.phase === 'falling'
       ? calcGhostPosition(state.board, state.currentPiece)
       : null;
+
+  // Single entry point for "start a fresh game" — used by the title screen's
+  // start button and the game-over retry button, so the play count fires
+  // exactly once per fresh game start either way.
+  const startGame = () => {
+    incrementPlayCount();
+    dispatch({ type: 'START_GAME' });
+  };
 
   // Sound effects: detect phase transitions
   const prevPhaseRef = useRef(state.phase);
@@ -89,7 +98,7 @@ export function GameScreen() {
     return (
       <TitleScreen
         highScore={state.highScore}
-        onStart={() => dispatch({ type: 'START_GAME' })}
+        onStart={startGame}
       />
     );
   }
@@ -160,7 +169,7 @@ export function GameScreen() {
                 score={state.score}
                 highScore={state.highScore}
                 maxChain={state.totalChains}
-                onRetry={() => dispatch({ type: 'START_GAME' })}
+                onRetry={startGame}
                 onTitle={() => dispatch({ type: 'RETURN_TO_TITLE' })}
               />
             )}

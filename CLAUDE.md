@@ -118,6 +118,26 @@ title → falling → locking → checking → erasing（4 tick）→ dropping �
 
 ---
 
+## プレイ数カウント（Firestore）
+
+`Rhythm_game`（姉妹プロジェクト、vanilla JS 版）の `PlayCounts` モジュールを TypeScript に移植したもの。
+Firebase SDK は使わず `fetch()` のみで Firestore REST API を直接叩く、という同じ方針を踏襲している。
+
+- モジュール: `src/lib/playCounts.ts`（`incrementPlayCount()` をエクスポート）
+- Firestore プロジェクト: `rythm-game-mo`（他の姉妹ゲームと共有。API キーはクライアントに公開される前提のもの）
+- ドキュメント: `playCounts/puyo`（1 ゲームにつき1ドキュメント。フィールドは `count` のみ）
+- 挙動: まず `:commit` であたる（`fieldTransforms` による原子的 `count += 1`）。ドキュメントが未作成
+  （このゲーム ID の初回プレイ）で失敗した場合のみ、`{ count: 1 }` での新規作成にフォールバックする
+  （Firestore のセキュリティルールは新規作成時 `count == 1` のみを許可）。
+- フック元: `src/components/GameScreen.tsx` の `startGame()`。タイトル画面の「PLAY NOW」
+  （`TitleScreen` の `onStart`）と、ゲームオーバー画面の「PLAY AGAIN」（`GameOverScreen` の `onRetry`）
+  の両方がこの `startGame()` を経由して `dispatch({ type: 'START_GAME' })` するため、フレッシュな
+  ゲーム開始1回につきちょうど1回だけ発火する（再レンダリングやページロードでは発火しない）。
+- 完全にファイア・アンド・フォーゲット: `await` せず、ゲーム開始をブロックしない。失敗してもローディング
+  表示やエラー UI は出さず、`console.warn` するのみ。
+
+---
+
 ## 要件定義
 
 ### 機能要件
