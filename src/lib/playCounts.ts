@@ -62,3 +62,31 @@ export function incrementPlayCount(): void {
       console.warn('playCount increment failed:', e);
     });
 }
+
+/**
+ * Fetches the current play count for display (e.g. on the title screen).
+ * Read-only GET on the single playCounts/puyo document — no SDK, no batch/
+ * query, since this repo only ever needs its own one document.
+ *
+ * Resolves to null if the document doesn't exist yet (nobody has played
+ * since this feature shipped) or on any error — callers should just render
+ * nothing in that case rather than a loading state or error message.
+ */
+interface FirestoreCountDoc {
+  fields?: { count?: { integerValue?: string } };
+}
+
+export async function fetchCount(): Promise<number | null> {
+  const url = `${ROOT}/playCounts/${encodeURIComponent(GAME_ID)}?key=${API_KEY}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const doc: FirestoreCountDoc = await res.json();
+    if (!doc.fields?.count?.integerValue) return null;
+    return parseInt(doc.fields.count.integerValue, 10);
+  } catch (e) {
+    console.warn('playCount fetch failed:', e);
+    return null;
+  }
+}

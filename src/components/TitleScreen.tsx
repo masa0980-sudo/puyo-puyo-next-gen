@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { fetchCount } from '@/lib/playCounts';
+
 interface Props {
   highScore: number;
   onStart: () => void;
@@ -6,6 +9,18 @@ interface Props {
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 export function TitleScreen({ highScore, onStart }: Props) {
+  const [playCount, setPlayCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCount().then((count) => {
+      if (!cancelled) setPlayCount(count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-gray-950 flex flex-col items-center justify-center gap-8 p-8">
       {/* キーアート背景。読み込めない環境でも下地の黒背景だけで成立するようにしてある */}
@@ -40,6 +55,12 @@ export function TitleScreen({ highScore, onStart }: Props) {
             {highScore.toLocaleString()}
           </span>
         </div>
+      )}
+
+      {playCount !== null && (
+        <p className="relative text-xs text-white/40 font-mono tracking-wide">
+          これまでに {playCount.toLocaleString()} 回プレイされています
+        </p>
       )}
 
       <button
