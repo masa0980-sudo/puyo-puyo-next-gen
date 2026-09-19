@@ -142,6 +142,19 @@ Firebase SDK は使わず `fetch()` のみで Firestore REST API を直接叩く
 
 ---
 
+## モバイルレイアウトとタッチ操作(2026-09-19)
+
+- `--cell-size` は幅だけでなく高さでも上限を決める(`globals.css` の `@media (pointer: coarse)`)。
+  盤面は `cell*12 + 30px`、スコア/余白/操作ボタンで約300px使うので、`(100dvh - 300px) / 12` を
+  超えないように `clamp()` する。これが無いと iPhone SE 相当(可視 568px)で DROP ボタンが
+  画面外に落ちる(ポートフォリオ掲載ゲームの一斉点検で発覚。tetris-next-gen と同じ対策)。
+  `100vh` → `100dvh` の順に2回宣言しているのは古いブラウザ向けフォールバック。
+- `TouchControls.tsx` の ◀▼▶ は長押しオートリピート(`DAS_MS=170` 後に `REPEAT_MS=50` 間隔)。
+  キーボードの keydown リピートと同じ操作感にするため。回転/DROP は単発のまま。
+- ボタンは `pointerdown` で即発火し `setPointerCapture` で指を固定する。`click` を使わないので
+  タップ→離すの往復ぶんの遅れが無く、複数ボタンの同時押しもポインタごとに独立して届く
+  (React の `onPointerDown` はポインタIDごとに呼ばれるため、特別なID管理は不要)。
+
 ## 要件定義
 
 ### 機能要件

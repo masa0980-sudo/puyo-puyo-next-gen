@@ -11,6 +11,22 @@
   }
 }
 
+/* タッチ端末では「スコア + 盤面 + 操作ボタン」を1画面に収める。
+   盤面の高さ = cell*12 + 30px、盤面以外(スコア/余白/ボタン)で約300px使うので、
+   縦が足りない端末(iPhone SE 等)ではセルを縮めてボタンが画面外に落ちないようにする。 */
+@media (pointer: coarse) {
+  :root {
+    --cell-size: clamp(16px, calc((100vh - 300px) / 12), 38px);
+    --cell-size: clamp(16px, calc((100dvh - 300px) / 12), 38px);
+  }
+}
+@media (pointer: coarse) and (max-width: 400px) {
+  :root {
+    --cell-size: clamp(16px, calc((100vh - 300px) / 12), 30px);
+    --cell-size: clamp(16px, calc((100dvh - 300px) / 12), 30px);
+  }
+}
+
 /* ===== Puyo erase animation ===== */
 @keyframes puyo-erase {
   0%   { transform: scale(1);   opacity: 1; filter: brightness(2); }
