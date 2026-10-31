@@ -247,3 +247,14 @@ Firebase SDK は使わず `fetch()` のみで Firestore REST API を直接叩く
 - ローカルストレージにハイスコアを永続化
 - サーバーサイドレンダリング不使用（ゲームロジックはすべてクライアント）
 - テスト: ゲームロジック（連鎖計算・消去判定）は純粋関数として実装し、単体テストを可能にする
+
+## Mini mode (`?mini=1`, called from mini-medley)
+
+`C:\claude\repos\mini-medley` が `?mini=1&sec=30&mute=0|1` で iframe に呼ぶ。**プロトコルの仕様は mini-medley の CLAUDE.md が正本**。`mini=1` が無いときは従来どおり。
+
+- `src/lib/mini.ts` が URL の読み取り・親への postMessage・点数換算（`MINI_TARGET=1500` のスコアで100点）を持つ。
+- 流れ: 起動 → 暗い待機画面で `mini-ready` → ハブの `mini-go` で `START_GAME`（`incrementPlayCount` は呼ばない）→ `sec` 秒かゲームオーバーで `mini-result` を1回だけ送り、「おしまい」の暗転で止まる。
+- 書かないもの: プレイ回数、ハイスコア（`disableStorageWrites()`）。ポーズ（P）はミニ版では無効（時計が実時間のため）。
+- 音は `sound.ts` の master ゲイン経由（`setMuted`）。mute=1 で無音。
+- 単独で `?mini=1&sec=10` を開くと 300ms 後に自動で始まる。テスト用に `window.__puyo.state()/done()` を出す（ミニ版のときだけ）。
+- ボット実測（盤面を見て色を合わせる）で30秒に 2520点（3連鎖）。普通の人の点は未測定。

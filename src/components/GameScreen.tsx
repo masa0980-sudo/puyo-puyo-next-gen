@@ -1,9 +1,11 @@
 'use client';
 
-import { useReducer, useEffect, useRef } from 'react';
+import { useReducer, useEffect, useRef, useState } from 'react';
+import { readMini, postToHub, scoreToPoints, type MiniConfig } from '@/lib/mini';
+import { disableStorageWrites } from '@/lib/storage';
 import { gameReducer, createTitleState } from '@/lib/reducer';
 import { calcGhostPosition } from '@/lib/puyoGame';
-import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver, startBgm, stopBgm } from '@/lib/sound';
+import { playMove, playRotate, playHardDrop, playLand, playErase, playGameOver, startBgm, stopBgm, setMuted } from '@/lib/sound';
 import { incrementPlayCount } from '@/lib/playCounts';
 import { GameBoard } from './GameBoard';
 import { NextPiece } from './NextPiece';
@@ -18,6 +20,59 @@ const INACTIVE_PHASES = new Set(['title', 'paused', 'gameover']);
 
 export function GameScreen() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createTitleState);
+
+  // ---- ミニ版(?mini=1。mini-medley から iframe で呼ばれる。仕様は mini-medley/CLAUDE.md) ----
+  const [mini, setMini] = useState<MiniConfig | null>(null);
+  const [miniDone, setMiniDone] = useState(false);
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
+  const miniDoneRef = useRef(false);
+  const finishMini = (why: string) => {
+    if (miniDoneRef.current) return;
+    miniDoneRef.current = true;
+    setMiniDone(true);
+    const s = stateRef.current;
+    postToHub({
+      type: 'mini-result',
+      score: scoreToPoints(s.score),
+      detail: { score: s.score, chains: s.totalChains, why },
+    });
+  };
+  useEffect(() => {
+    const cfg = readMini();
+    if (!cfg) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMini(cfg);
+    setMuted(cfg.mute);
+    disableStorageWrites();
+    let timer: number | undefined;
+    const go = () => {
+      if (stateRef.current.phase !== 'title') return;
+      dispatch({ type: 'START_GAME' });
+      timer = window.setTimeout(() => finishMini('time'), cfg.sec * 1000);
+    };
+    const onMsg = (e: MessageEvent) => {
+      if (e.source !== window.parent || e.data?.type !== 'mini-go') return;
+      go();
+    };
+    window.addEventListener('message', onMsg);
+    postToHub({ type: 'mini-ready' });
+    // 単独で開いたとき(親が無い)は自動で始める
+    const solo = window.parent === window ? window.setTimeout(go, 300) : undefined;
+    (window as unknown as { __puyo?: unknown }).__puyo = { state: () => stateRef.current, done: () => miniDoneRef.current };
+    return () => {
+      window.removeEventListener('message', onMsg);
+      if (timer) window.clearTimeout(timer);
+      if (solo) window.clearTimeout(solo);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (mini && state.phase === 'gameover') finishMini('gameover');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mini, state.phase]);
 
   const ghostPiece =
     state.currentPiece && state.phase === 'falling'
@@ -51,7 +106,7 @@ export function GameScreen() {
   // state.phase 自体(falling/locking/checking/...)は頻繁に変わるので、
   // active/非active の切り替わりだけを見て start/stop する
   // (毎フェーズ遷移で再スタートすると曲が刻まれてしまうため)
-  const bgmActive = !INACTIVE_PHASES.has(state.phase);
+  const bgmActive = !INACTIVE_PHASES.has(state.phase) && !miniDone;
   useEffect(() => {
     if (!bgmActive) return;
     startBgm();
@@ -60,11 +115,11 @@ export function GameScreen() {
 
   // Game tick loop
   useEffect(() => {
-    if (INACTIVE_PHASES.has(state.phase)) return;
+    if (INACTIVE_PHASES.has(state.phase) || miniDone) return;
     const interval = state.phase === 'falling' ? state.dropInterval : 50;
     const id = setInterval(() => dispatch({ type: 'TICK' }), interval);
     return () => clearInterval(id);
-  }, [state.phase, state.dropInterval]);
+  }, [state.phase, state.dropInterval, miniDone]);
 
   // Keyboard input
   useEffect(() => {
@@ -87,12 +142,25 @@ export function GameScreen() {
           playRotate(); dispatch({ type: 'ROTATE_RIGHT' }); break;
         case 'p':
         case 'P':
+          if (readMini()) break; // ミニ版は時計が実時間なのでポーズ無し
           dispatch({ type: 'TOGGLE_PAUSE' }); break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
+
+  if (mini && (state.phase === 'title' || miniDone)) {
+    // 待機中・終了後は静かな暗転だけ(タイトルや結果は出さない)
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center text-white/60 text-sm"
+        style={{ background: 'radial-gradient(ellipse at top, #1a0533 0%, #050510 60%)' }}
+      >
+        {miniDone ? 'おしまい' : ''}
+      </div>
+    );
+  }
 
   if (state.phase === 'title') {
     return (
