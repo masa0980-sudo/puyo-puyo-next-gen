@@ -36,13 +36,15 @@ export function createTitleState(): GameState {
     chainCount: 0,
     totalChains: 0,
     totalErasureRounds: 0,
+    totalErased: 0,
+    totalLocked: 0,
     dropInterval: INITIAL_DROP_INTERVAL,
     showChainPopup: false,
     erasingTickCount: 0,
   };
 }
 
-function createGameState(highScore: number): GameState {
+function createGameState(highScore: number, dropInterval = INITIAL_DROP_INTERVAL): GameState {
   return {
     phase: 'falling',
     board: createEmptyBoard(),
@@ -55,7 +57,9 @@ function createGameState(highScore: number): GameState {
     chainCount: 0,
     totalChains: 0,
     totalErasureRounds: 0,
-    dropInterval: INITIAL_DROP_INTERVAL,
+    totalErased: 0,
+    totalLocked: 0,
+    dropInterval,
     showChainPopup: false,
     erasingTickCount: 0,
   };
@@ -97,6 +101,7 @@ function tickChecking(state: GameState): GameState {
       nextPiece: state.nextNextPiece,
       nextNextPiece: createPiece(),
       chainCount: 0,
+      totalLocked: state.totalLocked + 1,
       showChainPopup: false,
     };
   }
@@ -130,6 +135,7 @@ function tickChecking(state: GameState): GameState {
     chainCount: newChainCount,
     totalChains: newTotalChains,
     totalErasureRounds: newTotalErasureRounds,
+    totalErased: state.totalErased + erasedCount,
     phase: 'erasing',
     erasingTickCount: 0,
     showChainPopup: true,
@@ -164,7 +170,7 @@ function handleTick(state: GameState): GameState {
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_GAME':
-      return createGameState(state.highScore);
+      return createGameState(state.highScore, action.dropInterval);
 
     case 'RETURN_TO_TITLE':
       return { ...state, phase: 'title' };

@@ -38,13 +38,15 @@ export interface GameState {
   chainCount: number;
   totalChains: number;
   totalErasureRounds: number;
+  totalErased: number; // 消したぷよの合計個数(ミニ版の採点用)
+  totalLocked: number; // 置いたペアの数(ミニ版の採点用)
   dropInterval: number;
   showChainPopup: boolean;
   erasingTickCount: number;
 }
 
 export type GameAction =
-  | { type: 'START_GAME' }
+  | { type: 'START_GAME'; dropInterval?: number }
   | { type: 'MOVE_LEFT' }
   | { type: 'MOVE_RIGHT' }
   | { type: 'SOFT_DROP' }

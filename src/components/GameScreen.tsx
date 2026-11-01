@@ -1,7 +1,7 @@
 'use client';
 
 import { useReducer, useEffect, useRef, useState } from 'react';
-import { readMini, postToHub, scoreToPoints, type MiniConfig } from '@/lib/mini';
+import { readMini, postToHub, scoreToPoints, MINI_DROP_INTERVAL, type MiniConfig } from '@/lib/mini';
 import { disableStorageWrites } from '@/lib/storage';
 import { gameReducer, createTitleState } from '@/lib/reducer';
 import { calcGhostPosition } from '@/lib/puyoGame';
@@ -36,8 +36,8 @@ export function GameScreen() {
     const s = stateRef.current;
     postToHub({
       type: 'mini-result',
-      score: scoreToPoints(s.score),
-      detail: { score: s.score, chains: s.totalChains, why },
+      score: scoreToPoints(s.totalErased, s.totalLocked, s.totalChains),
+      detail: { score: s.score, erased: s.totalErased, locked: s.totalLocked, chains: s.totalChains, why },
     });
   };
   useEffect(() => {
@@ -50,7 +50,7 @@ export function GameScreen() {
     let timer: number | undefined;
     const go = () => {
       if (stateRef.current.phase !== 'title') return;
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START_GAME', dropInterval: MINI_DROP_INTERVAL });
       timer = window.setTimeout(() => finishMini('time'), cfg.sec * 1000);
     };
     const onMsg = (e: MessageEvent) => {
