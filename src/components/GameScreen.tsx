@@ -24,6 +24,7 @@ export function GameScreen() {
   // ---- ミニ版(?mini=1。mini-medley から iframe で呼ばれる。仕様は mini-medley/CLAUDE.md) ----
   const [mini, setMini] = useState<MiniConfig | null>(null);
   const [miniDone, setMiniDone] = useState(false);
+  const [remain, setRemain] = useState<number | null>(null);
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
@@ -48,9 +49,15 @@ export function GameScreen() {
     setMuted(cfg.mute);
     disableStorageWrites();
     let timer: number | undefined;
+    let tick: number | undefined;
     const go = () => {
       if (stateRef.current.phase !== 'title') return;
       dispatch({ type: 'START_GAME', dropInterval: MINI_DROP_INTERVAL });
+      const endAt = Date.now() + cfg.sec * 1000;
+      setRemain(cfg.sec);
+      tick = window.setInterval(() => {
+        setRemain(Math.max(0, Math.ceil((endAt - Date.now()) / 1000)));
+      }, 250);
       timer = window.setTimeout(() => finishMini('time'), cfg.sec * 1000);
     };
     const onMsg = (e: MessageEvent) => {
@@ -65,6 +72,7 @@ export function GameScreen() {
     return () => {
       window.removeEventListener('message', onMsg);
       if (timer) window.clearTimeout(timer);
+      if (tick) window.clearInterval(tick);
       if (solo) window.clearTimeout(solo);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,6 +203,17 @@ export function GameScreen() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-3 w-full max-w-sm">
+        {mini && remain !== null && (
+          <div
+            className="px-4 py-1 rounded-full text-white font-bold tabular-nums"
+            style={{
+              background: remain <= 10 ? 'rgba(239,68,68,0.85)' : 'rgba(255,255,255,0.15)',
+              fontSize: '18px',
+            }}
+          >
+            のこり {remain} 秒
+          </div>
+        )}
         <ScorePanel
           score={state.score}
           highScore={state.highScore}
